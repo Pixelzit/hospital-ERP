@@ -1,12 +1,18 @@
 export async function api(path, options = {}) {
+  const headers = {
+    Accept: 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+    ...(options.headers || {}),
+  }
+
+  if (options.body && !headers['Content-Type'] && !(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json'
+  }
+
   const res = await fetch(`${window.location.origin}/api${path}`, {
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest',
-      ...(options.headers || {}),
-    },
+    credentials: 'include',
     ...options,
+    headers,
   })
 
   const data = await res.json().catch(() => ({}))

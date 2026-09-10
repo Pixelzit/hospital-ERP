@@ -14,11 +14,13 @@ use Throwable;
 
 class DoctorController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $departmentId = UuidBin::to((string) $request->query('department_id', ''));
+
         return response()->json([
             'success' => true,
-            'data' => $this->listDoctors(),
+            'data' => $this->listDoctors($departmentId),
             'total' => (int) DB::table('doctors')->count(),
         ]);
     }
@@ -288,10 +290,17 @@ class DoctorController extends Controller
         ]);
     }
 
-    private function listDoctors()
+    private function listDoctors($departmentId = null)
     {
-        $rows = DB::table('doctors as d')
-            ->join('users as u', 'u.id', '=', 'd.user_id')
+        $query = DB::table('doctors as d')
+            ->join('users as u', 'u.id', '=', 'd.user_id');
+
+        if ($departmentId) {
+            $query->join('doctor_departments as dd', 'dd.doctor_id', '=', 'd.id')
+                ->where('dd.department_id', $departmentId);
+        }
+
+        $rows = $query
             ->orderByDesc('d.created_at')
             ->limit(100)
             ->get([

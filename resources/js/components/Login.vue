@@ -32,9 +32,10 @@
 
       <button
         type="submit"
-        class="w-full h-11 rounded-xl bg-[#2f86f3] text-white text-[15px] font-semibold hover:bg-[#2476dc] transition"
+        class="w-full h-11 rounded-xl bg-[#2f86f3] text-white text-[15px] font-semibold hover:bg-[#2476dc] transition disabled:opacity-60"
+        :disabled="saving"
       >
-        Enter
+        {{ saving ? 'Entering…' : 'Enter' }}
       </button>
     </form>
   </div>
@@ -42,21 +43,28 @@
 
 <script setup>
 import { ref } from 'vue'
-import { canLogin } from '../auth/credentials.js'
+import { api } from '../api'
 
 const emit = defineEmits(['success'])
 
 const username = ref('')
 const password = ref('')
 const error = ref('')
+const saving = ref(false)
 
-function submit() {
-  if (canLogin(username.value, password.value)) {
-    error.value = ''
-    emit('success')
-    return
+async function submit() {
+  error.value = ''
+  saving.value = true
+  try {
+    const data = await api('/login', {
+      method: 'POST',
+      body: JSON.stringify({ username: username.value, password: password.value }),
+    })
+    emit('success', data.data)
+  } catch (e) {
+    error.value = e.message || 'Invalid username or password'
+  } finally {
+    saving.value = false
   }
-
-  error.value = 'Invalid username or password'
 }
 </script>

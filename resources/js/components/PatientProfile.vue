@@ -17,7 +17,7 @@
             More
           </button>
           <div v-if="menuOpen" class="absolute right-0 top-11 z-20 w-52 bg-white rounded-xl border border-slate-100 shadow-[0_8px_30px_rgba(47,134,243,0.12)] py-1">
-            <button type="button" class="w-full text-left px-3 py-2 text-sm hover:bg-[#eef3fb]" @click="goTab('appointments')">Book Appointment</button>
+            <button type="button" class="w-full text-left px-3 py-2 text-sm hover:bg-[#eef3fb]" @click="startBook">Book Appointment</button>
             <button type="button" class="w-full text-left px-3 py-2 text-sm hover:bg-[#eef3fb]" @click="goTab('history')">View Medical History</button>
             <button type="button" class="w-full text-left px-3 py-2 text-sm hover:bg-[#eef3fb]" @click="goTab('documents')">Upload Document</button>
             <button type="button" class="w-full text-left px-3 py-2 text-sm hover:bg-[#eef3fb]" @click="goTab('billing')">View Billing</button>
@@ -101,13 +101,16 @@
         type="button"
         class="px-4 h-11 text-sm whitespace-nowrap border-b-2 -mb-px"
         :class="tab === item.id ? 'border-[#2f86f3] text-[#2f86f3] font-medium' : 'border-transparent text-slate-500'"
-        @click="tab = item.id"
+        @click="goTab(item.id)"
       >
         {{ item.label }}
       </button>
     </div>
 
-    <div v-if="tab === 'overview'" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <VisitDetail v-if="visitId" :patient-id="profile.id" :visit-id="visitId" @back="closeVisit" />
+    <AppointmentBookForm v-else-if="booking" :patient-id="profile.id" :appointment="reschedule" @cancel="closeBook" @saved="onAppointmentSaved" />
+
+    <div v-else-if="tab === 'overview'" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <section class="rounded-2xl border border-slate-100 p-5">
         <h4 class="text-[15px] font-semibold mb-4">Personal Information</h4>
         <dl class="space-y-3 text-sm">
@@ -169,7 +172,7 @@
               <td>{{ row.doctor }}</td>
               <td>{{ row.department }}</td>
               <td>{{ row.diagnosis || '—' }}</td>
-              <td class="text-right"><button type="button" class="text-[#2f86f3] text-sm">View</button></td>
+              <td class="text-right"><button type="button" class="text-[#2f86f3] text-sm" @click="visitId = row.id">View</button></td>
             </tr>
           </tbody>
         </table>
@@ -195,7 +198,7 @@
         <div class="flex gap-2">
           <button v-for="item in appointmentTabs" :key="item" type="button" class="h-9 px-3 rounded-xl text-sm" :class="appointmentTab === item ? 'bg-[#2f86f3] text-white' : 'bg-[#eef3fb] text-slate-600'" @click="appointmentTab = item">{{ item[0].toUpperCase() + item.slice(1) }}</button>
         </div>
-        <button type="button" class="px-4 h-10 rounded-xl bg-[#2f86f3] text-white text-sm" @click="notice = 'Book appointments for this patient from the Appointments workflow. This tab keeps the patient context.'">+ Book Appointment</button>
+        <button type="button" class="px-4 h-10 rounded-xl bg-[#2f86f3] text-white text-sm" @click="startBook">+ Book Appointment</button>
       </div>
       <p v-if="notice" class="mb-3 text-sm text-slate-500">{{ notice }}</p>
       <p v-if="!filteredAppointments.length" class="text-sm text-slate-400 py-8 text-center">No {{ appointmentTab }} appointments for this patient.</p>
@@ -211,9 +214,9 @@
               <td>{{ row.appointment_type }}</td>
               <td>{{ row.status }}</td>
               <td class="text-right whitespace-nowrap">
-                <button type="button" class="text-[#2f86f3] mr-3">View</button>
-                <button type="button" class="text-slate-500 mr-3" @click="notice = 'Reschedule this appointment in the Appointments workflow.'">Reschedule</button>
-                <button type="button" class="text-red-500" @click="notice = 'Cancel this appointment in the Appointments workflow.'">Cancel</button>
+                <button type="button" class="text-[#2f86f3] mr-3" @click="viewAppointment(row)">View</button>
+                <button v-if="canChange(row)" type="button" class="text-slate-500 mr-3" @click="startReschedule(row)">Reschedule</button>
+                <button v-if="canChange(row)" type="button" class="text-red-500" @click="askCancel = row">Cancel</button>
               </td>
             </tr>
           </tbody>
@@ -242,7 +245,10 @@
               <td>{{ row.document_type }}</td>
               <td>{{ row.title }}</td>
               <td>{{ row.doctor }} / {{ row.department }}</td>
-              <td class="text-right"><span class="text-slate-400 text-sm">View</span></td>
+              <td class="text-right whitespace-nowrap">
+                <button type="button" class="text-[#2f86f3] mr-3" @click="openDocument(row, false)">View</button>
+                <button type="button" class="text-slate-500" @click="openDocument(row, true)">Download</button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -266,10 +272,69 @@
               <td>{{ row.service }}</td>
               <td>₹{{ money(row.amount) }}</td>
               <td>{{ row.status }}</td>
-              <td class="text-right whitespace-nowrap text-slate-400">View Bill · Print Bill · View Receipt</td>
+              <td class="text-right whitespace-nowrap">
+                <button type="button" class="text-[#2f86f3] mr-3" @click="openBill(row)">View Bill</button>
+                <button type="button" class="text-slate-500 mr-3" @click="printBill(row)">Print Bill</button>
+                <button type="button" class="text-slate-500" @click="openReceipt(row)">View Receipt</button>
+              </td>
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <div v-if="askCancel" class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      <div class="font-medium mb-1">Cancel appointment {{ askCancel.appointment_number }}?</div>
+      <p class="mb-2">The appointment stays in history as Cancelled.</p>
+      <input v-model="cancelReason" type="text" placeholder="Cancellation reason *" class="w-full h-10 rounded-xl px-3 bg-white outline-none mb-2">
+      <p v-if="cancelError" class="text-red-500 mb-2">{{ cancelError }}</p>
+      <div class="flex gap-2">
+        <button type="button" class="px-3 h-9 rounded-xl bg-amber-600 text-white text-sm" :disabled="savingCancel" @click="confirmCancel">{{ savingCancel ? 'Saving…' : 'Confirm cancel' }}</button>
+        <button type="button" class="px-3 h-9 rounded-xl border border-amber-200 text-sm" @click="askCancel = null; cancelReason = ''">Back</button>
+      </div>
+    </div>
+
+    <div v-if="viewingDoc" class="mt-4 rounded-2xl border border-slate-100 p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="font-semibold">{{ viewingDoc.title }}</h4>
+        <button type="button" class="text-sm text-[#2f86f3]" @click="viewingDoc = null">Close</button>
+      </div>
+      <iframe v-if="canPreview(viewingDoc)" :src="documentUrl(viewingDoc, false)" class="w-full h-[480px] rounded-xl bg-[#eef3fb]"></iframe>
+      <p v-else class="text-sm text-slate-500">This file type opens as a download.</p>
+    </div>
+
+    <div v-if="bill" class="mt-4 rounded-2xl border border-slate-100 p-5 text-sm">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="font-semibold">{{ billKind === 'receipt' ? 'Receipt' : 'Invoice' }} {{ bill.invoice_number }}</h4>
+        <button type="button" class="text-sm text-[#2f86f3]" @click="bill = null">Close</button>
+      </div>
+      <p class="text-slate-500 mb-3">{{ bill.patient?.name }} · {{ bill.patient?.mrn }} · {{ formatDate(bill.date) }} · {{ bill.status }}</p>
+      <div v-if="billKind !== 'receipt'" class="overflow-x-auto">
+        <table class="w-full">
+          <thead><tr class="text-left text-slate-400"><th class="pb-2 font-medium">Service</th><th class="pb-2 font-medium">Amount</th><th class="pb-2 font-medium">Discount</th><th class="pb-2 font-medium">Total</th></tr></thead>
+          <tbody>
+            <tr v-for="item in bill.items" :key="item.id" class="border-t border-slate-100">
+              <td class="py-2">{{ item.description }}</td>
+              <td>₹{{ money(item.unit_price) }}</td>
+              <td>₹{{ money(item.discount) }}</td>
+              <td>₹{{ money(item.total) }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="mt-3 text-right">
+          <div>Subtotal ₹{{ money(bill.subtotal) }}</div>
+          <div>Discount ₹{{ money(bill.discount) }}</div>
+          <div>Tax ₹{{ money(bill.tax) }}</div>
+          <div class="font-semibold">Total ₹{{ money(bill.total) }}</div>
+          <div>Paid ₹{{ money(bill.amount_paid) }}</div>
+          <div>Balance ₹{{ money(bill.balance) }}</div>
+        </div>
+      </div>
+      <h5 class="font-medium mt-4 mb-2">Payments</h5>
+      <p v-if="!bill.payments?.length" class="text-slate-400">No payments recorded.</p>
+      <div v-for="pay in bill.payments" :key="pay.id" class="border-t border-slate-100 py-2">
+        {{ formatDate(pay.paid_at) }} · {{ pay.payment_method }} · ₹{{ money(pay.amount) }} · {{ pay.status }}
+        <span v-if="pay.transaction_reference"> · {{ pay.transaction_reference }}</span>
       </div>
     </div>
   </div>
@@ -279,6 +344,9 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { api } from '../api'
 import { filterAppointments, filterDocuments, patientInitials } from '../patients/profileWorkspace.js'
+import { validateCancelReason } from '../patients/appointmentForm.js'
+import VisitDetail from './VisitDetail.vue'
+import AppointmentBookForm from './AppointmentBookForm.vue'
 
 const props = defineProps({
   patient: { type: Object, required: true },
@@ -298,6 +366,16 @@ const askDeactivate = ref(false)
 const savingStatus = ref(false)
 const notice = ref('')
 const docError = ref('')
+const visitId = ref(null)
+const booking = ref(false)
+const reschedule = ref(null)
+const askCancel = ref(null)
+const cancelReason = ref('')
+const cancelError = ref('')
+const savingCancel = ref(false)
+const viewingDoc = ref(null)
+const bill = ref(null)
+const billKind = ref('bill')
 
 const tabs = [
   { id: 'overview', label: 'Overview' },
@@ -380,6 +458,112 @@ function money(value) {
 function goTab(id) {
   tab.value = id
   menuOpen.value = false
+  visitId.value = null
+  booking.value = false
+  reschedule.value = null
+}
+
+function closeVisit() {
+  visitId.value = null
+  tab.value = 'history'
+  historyTab.value = 'visits'
+}
+
+function startBook() {
+  menuOpen.value = false
+  tab.value = 'appointments'
+  visitId.value = null
+  reschedule.value = null
+  booking.value = true
+}
+
+function startReschedule(row) {
+  reschedule.value = row
+  booking.value = true
+}
+
+function closeBook() {
+  booking.value = false
+  reschedule.value = null
+}
+
+async function onAppointmentSaved() {
+  booking.value = false
+  reschedule.value = null
+  tab.value = 'appointments'
+  await load()
+}
+
+function canChange(row) {
+  const status = (row.status || '').toLowerCase()
+  return !['cancelled', 'canceled', 'completed'].includes(status)
+}
+
+function viewAppointment(row) {
+  notice.value = `${row.appointment_number} · ${formatDate(row.appointment_date)} ${row.start_time || ''} · ${row.doctor} · ${row.status}`
+}
+
+async function confirmCancel() {
+  cancelError.value = validateCancelReason(cancelReason.value)
+  if (cancelError.value) return
+  savingCancel.value = true
+  try {
+    await api(`/appointments/${askCancel.value.id}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({ reason: cancelReason.value.trim() }),
+    })
+    askCancel.value = null
+    cancelReason.value = ''
+    appointmentTab.value = 'cancelled'
+    await load()
+  } catch (e) {
+    cancelError.value = e.message
+  } finally {
+    savingCancel.value = false
+  }
+}
+
+function documentUrl(row, download) {
+  return `/api/patients/${profile.value.id}/documents/${row.id}/file${download ? '?download=1' : ''}`
+}
+
+function canPreview(row) {
+  const mime = (row.mime_type || '').toLowerCase()
+  const title = (row.title || '').toLowerCase()
+  return mime.includes('pdf') || mime.startsWith('image/') || title.endsWith('.pdf') || mime.startsWith('text/')
+}
+
+function openDocument(row, download) {
+  if (download || !canPreview(row)) {
+    window.open(documentUrl(row, true), '_blank')
+    return
+  }
+  viewingDoc.value = row
+}
+
+async function openBill(row) {
+  billKind.value = 'bill'
+  const data = await api(`/patients/${profile.value.id}/invoices/${row.id}`)
+  bill.value = data.data
+}
+
+function printBill(row) {
+  window.open(`/api/patients/${profile.value.id}/invoices/${row.id}/print`, '_blank')
+}
+
+async function openReceipt(row) {
+  try {
+    billKind.value = 'receipt'
+    const data = await api(`/patients/${profile.value.id}/invoices/${row.id}`)
+    if (!data.data?.payments?.length) {
+      notice.value = 'No payment receipt for this invoice.'
+      bill.value = null
+      return
+    }
+    bill.value = data.data
+  } catch (e) {
+    notice.value = e.message
+  }
 }
 
 function printSummary() {

@@ -1,6 +1,7 @@
 <template>
   <AddPatientForm v-if="adding" :patients="rows" @cancel="adding = false" @saved="onCreated" />
-  <PatientProfile v-else-if="selected" :patient="selected" @back="selected = null" />
+  <AddPatientForm v-else-if="editingProfile" :patients="rows" :patient="selected" @cancel="editingProfile = false" @saved="onProfileEdited" />
+  <PatientProfile v-else-if="selected" :patient="selected" @back="selected = null" @edit="editingProfile = true" @updated="onProfileEdited" />
 
   <div v-else class="bg-white rounded-[22px] p-6 shadow-[0_8px_30px_rgba(47,134,243,0.06)]">
     <div class="flex items-center justify-between mb-6">
@@ -144,6 +145,7 @@ const total = ref(0)
 const loading = ref(true)
 const error = ref('')
 const adding = ref(false)
+const editingProfile = ref(false)
 const selected = ref(null)
 const editing = ref(null)
 const menuId = ref(null)
@@ -236,6 +238,12 @@ async function load() {
 function onCreated(patient) {
   adding.value = false
   selected.value = patient
+  load()
+}
+
+function onProfileEdited(patient) {
+  editingProfile.value = false
+  if (patient) selected.value = patient
   load()
 }
 

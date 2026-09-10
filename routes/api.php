@@ -12,6 +12,7 @@ Route::post('patients/duplicates', [PatientController::class, 'duplicates']);
 Route::post('patients', [PatientController::class, 'store']);
 Route::get('patients/{id}', [PatientController::class, 'show']);
 Route::put('patients/{id}', [PatientController::class, 'update']);
+Route::post('patients/{id}/documents', [PatientController::class, 'storeDocument']);
 Route::get('appointments', [AppointmentController::class, 'index']);
 Route::get('doctors', [DoctorController::class, 'index']);
 Route::post('doctors', [DoctorController::class, 'store']);

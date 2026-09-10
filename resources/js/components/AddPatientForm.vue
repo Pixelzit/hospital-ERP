@@ -2,8 +2,8 @@
   <div class="bg-white rounded-[22px] p-6 shadow-[0_8px_30px_rgba(47,134,243,0.06)]">
     <div class="flex items-start justify-between gap-4 mb-6">
       <div>
-        <h2 class="text-xl font-semibold">Add New Patient</h2>
-        <p class="text-sm text-slate-400">Register a patient in HCS Hospital ERP</p>
+        <h2 class="text-xl font-semibold">{{ isEdit ? 'Edit Patient' : 'Add New Patient' }}</h2>
+        <p class="text-sm text-slate-400">{{ isEdit ? 'Update demographic and contact information' : 'Register a patient in HCS Hospital ERP' }}</p>
       </div>
     </div>
 
@@ -195,15 +195,18 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { api } from '../api'
 import { findDuplicatePatients, splitFullName, validatePatientForm } from '../patients/addPatientForm.js'
+import { profileToForm } from '../patients/profileWorkspace.js'
 
 const props = defineProps({
   patients: { type: Array, default: () => [] },
+  patient: { type: Object, default: null },
 })
 
 const emit = defineEmits(['cancel', 'saved'])
+const isEdit = computed(() => Boolean(props.patient?.id))
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
 const saving = ref(false)
@@ -241,7 +244,7 @@ const form = reactive({
 const saveLabel = computed(() => {
   if (saving.value) return 'Saving…'
   if (forceSave.value && duplicates.value.length) return 'Save anyway'
-  return 'Save Patient'
+  return isEdit.value ? 'Save Patient' : 'Save Patient'
 })
 
 function errorClass(field) {
@@ -310,8 +313,8 @@ async function save() {
   errors.value = validatePatientForm(form)
   if (Object.keys(errors.value).length) return
 
-  const localHits = findDuplicatePatients(props.patients, form)
-  if (localHits.length && !forceSave.value) {
+  const localHits = findDuplicatePatients(props.patients, form).filter((row) => row.id !== props.patient?.id)
+  if (localHits.length && !forceSave.value && !isEdit.value) {
     duplicates.value = localHits
     forceSave.value = true
     return
@@ -319,8 +322,9 @@ async function save() {
 
   saving.value = true
   try {
-    const data = await api('/patients', {
-      method: 'POST',
+    const path = isEdit.value ? `/patients/${props.patient.id}` : '/patients'
+    const data = await api(path, {
+      method: isEdit.value ? 'PUT' : 'POST',
       body: JSON.stringify(payload(forceSave.value)),
     })
     emit('saved', data.data)
@@ -336,6 +340,22 @@ async function save() {
     saving.value = false
   }
 }
+
+async function hydrate() {
+  if (!props.patient?.id) return
+  let source = props.patient
+  if (!props.patient.address && !props.patient.emergency) {
+    try {
+      const data = await api(`/patients/${props.patient.id}`)
+      source = data.data
+    } catch (e) {
+      formError.value = e.message
+    }
+  }
+  Object.assign(form, profileToForm(source))
+}
+
+onMounted(hydrate)
 </script>
 
 <style scoped>

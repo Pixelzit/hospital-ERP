@@ -41,8 +41,9 @@ class DashboardController extends Controller
             $icuPatients = (int) DB::table('admissions')->where('status', 'admitted')->count();
         }
 
-        $appointmentsToday = (int) DB::table('appointments')
-            ->whereDate('appointment_date', $today)
+        $appointmentsUpcoming = (int) DB::table('appointments')
+            ->whereIn('status', ['scheduled', 'confirmed'])
+            ->whereDate('appointment_date', '>=', $today)
             ->count();
 
         $todayOp = (int) DB::table('appointments')
@@ -105,7 +106,7 @@ class DashboardController extends Controller
             'kpis' => [
                 'beds_occupied' => $bedsOccupied,
                 'icu_patients' => $icuPatients,
-                'appointments' => $appointmentsToday,
+                'appointments' => $appointmentsUpcoming,
                 'today_op' => $todayOp,
                 'patients_total' => (int) DB::table('patients')->count(),
                 'doctors_total' => (int) DB::table('doctors')->count(),

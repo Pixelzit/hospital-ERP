@@ -1,6 +1,6 @@
 <template>
   <AddPatientForm v-if="adding" :patients="rows" @cancel="adding = false" @saved="onCreated" />
-  <AddPatientForm v-else-if="editingProfile" :patients="rows" :patient="selected" @cancel="editingProfile = false" @saved="onProfileEdited" />
+  <AddPatientForm v-else-if="editingProfile" :patients="rows" :patient="selected" @cancel="cancelEdit" @saved="onProfileEdited" />
   <PatientProfile v-else-if="selected" :patient="selected" @back="selected = null" @edit="editingProfile = true" @updated="onProfileEdited" />
 
   <div v-else class="bg-white rounded-[22px] p-6 shadow-[0_8px_30px_rgba(47,134,243,0.06)]">
@@ -89,7 +89,7 @@
                 <button type="button" class="px-3 py-1.5 text-sm rounded-lg border text-[#2f86f3] border-blue-200 hover:bg-blue-50" @click="openProfile(row)">
                   View
                 </button>
-                <button type="button" class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50" @click="editing = row">
+                <button type="button" class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50" @click="startEdit(row)">
                   Edit
                 </button>
                 <button type="button" class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50" @click="menuId = menuId === row.id ? null : row.id">
@@ -126,8 +126,6 @@
         <button type="button" class="h-9 px-3 rounded-xl border border-slate-200 disabled:opacity-40" :disabled="page >= pages" @click="page += 1">Next</button>
       </div>
     </div>
-
-    <PatientEditModal v-if="editing" :patient="editing" @close="editing = null" @saved="onEdited" />
   </div>
 </template>
 
@@ -137,7 +135,6 @@ import { api } from '../api'
 import { filterPatients, paginatePatients } from '../patients/listQuery.js'
 import { copyText } from '../patients/copyText.js'
 import AddPatientForm from './AddPatientForm.vue'
-import PatientEditModal from './PatientEditModal.vue'
 import PatientProfile from './PatientProfile.vue'
 
 const rows = ref([])
@@ -146,8 +143,8 @@ const loading = ref(true)
 const error = ref('')
 const adding = ref(false)
 const editingProfile = ref(false)
+const editingFromList = ref(false)
 const selected = ref(null)
-const editing = ref(null)
 const menuId = ref(null)
 const copiedId = ref(null)
 const page = ref(1)
@@ -207,6 +204,21 @@ function openProfile(row) {
   selected.value = row
 }
 
+function startEdit(row) {
+  menuId.value = null
+  selected.value = row
+  editingFromList.value = true
+  editingProfile.value = true
+}
+
+function cancelEdit() {
+  editingProfile.value = false
+  if (editingFromList.value) {
+    editingFromList.value = false
+    selected.value = null
+  }
+}
+
 async function copyMrn(row) {
   const ok = await copyText(row.mrn || '')
   if (!ok) {
@@ -243,12 +255,12 @@ function onCreated(patient) {
 
 function onProfileEdited(patient) {
   editingProfile.value = false
-  if (patient) selected.value = patient
-  load()
-}
-
-function onEdited() {
-  editing.value = null
+  if (editingFromList.value) {
+    editingFromList.value = false
+    selected.value = null
+  } else if (patient) {
+    selected.value = patient
+  }
   load()
 }
 

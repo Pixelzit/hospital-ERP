@@ -1,5 +1,5 @@
 <template>
-  <Login v-if="!loggedIn" @success="loggedIn = true" />
+  <Login v-if="!loggedIn" @success="onLogin" />
   <div v-else class="h-screen overflow-hidden font-sans" :class="darkMode ? 'bg-[#0f172a] text-slate-100' : 'bg-[#eef3fb] text-slate-800'">
     <!-- Top bar -->
     <header class="h-[72px] px-6 flex items-center gap-6 shrink-0">
@@ -40,8 +40,8 @@
             class="w-10 h-10 rounded-full object-cover"
           >
           <div class="leading-tight pr-1">
-            <div class="text-sm font-semibold">Dr. Sachin J</div>
-            <div class="text-xs text-slate-400">Admin</div>
+            <div class="text-sm font-semibold">{{ currentUser?.name || 'HCS User' }}</div>
+            <div class="text-xs text-slate-400">{{ currentUser?.username || 'User' }}</div>
           </div>
         </div>
       </div>
@@ -85,7 +85,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { api } from './api'
 import NavIcon from './components/NavIcon.vue'
 import Login from './components/Login.vue'
 import Dashboard from './components/Dashboard.vue'
@@ -98,14 +99,39 @@ import Settings from './components/Settings.vue'
 import HelpFaq from './components/HelpFaq.vue'
 
 const loggedIn = ref(false)
+const currentUser = ref(null)
 const currentView = ref('overview')
 const darkMode = ref(false)
 const search = ref('')
 
-function logOut() {
+function onLogin(user) {
+  currentUser.value = user || null
+  loggedIn.value = true
+}
+
+async function logOut() {
+  try {
+    await api('/logout', { method: 'POST' })
+  } catch (e) {
+    // session is cleared locally either way
+  }
   loggedIn.value = false
+  currentUser.value = null
   currentView.value = 'overview'
 }
+
+async function restoreSession() {
+  try {
+    const data = await api('/me')
+    currentUser.value = data.data
+    loggedIn.value = true
+  } catch (e) {
+    loggedIn.value = false
+    currentUser.value = null
+  }
+}
+
+onMounted(restoreSession)
 
 const menu = [
   { key: 'overview', label: 'Overview', icon: 'overview' },

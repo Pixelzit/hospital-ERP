@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\PatientWorkspaceController;
+use App\Http\Controllers\Api\PharmacyMedicineController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('login', [AuthController::class, 'login']);
@@ -36,4 +37,7 @@ Route::middleware('api.auth')->group(function () {
     Route::get('doctors/{id}', [DoctorController::class, 'show']);
     Route::put('doctors/{id}', [DoctorController::class, 'update']);
     Route::delete('doctors/{id}', [DoctorController::class, 'destroy']);
+    Route::get('pharmacy/medicines', [PharmacyMedicineController::class, 'index']);
+    Route::post('pharmacy/medicines', [PharmacyMedicineController::class, 'store']);
+    Route::get('pharmacy/medicines/{id}', [PharmacyMedicineController::class, 'show']);
 });

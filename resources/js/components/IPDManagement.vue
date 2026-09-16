@@ -396,12 +396,36 @@ async function submitInvoice() {
   }
   billBusy.value = true
   try {
-    await api(`/ipd/admissions/${selectedAdmissionId.value}/invoices`, {
+    // Explicit 2xx (including 201 Created) means success; do not show an error toast.
+    const res = await fetch(`${window.location.origin}/api/ipd/admissions/${selectedAdmissionId.value}/invoices`, {
       method: 'POST',
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
       body: JSON.stringify({ items }),
     })
+    const payload = await res.json().catch(() => ({}))
+    if (res.status < 200 || res.status >= 300) {
+      invoiceError.value = payload.message || payload.error || `Request failed (${res.status})`
+      return
+    }
+    invoiceError.value = ''
+    billError.value = ''
     invoiceOpen.value = false
-    await loadInvoices()
+    if (payload && payload.data && payload.data.id) {
+      const row = Object.assign({}, payload.data)
+      delete row.items
+      invoices.value = [row].concat(invoices.value.filter((i) => i.id !== row.id))
+    }
+    try {
+      await loadInvoices()
+    } catch (_e) {
+      // Create already succeeded; keep optimistic row if refresh flakes.
+    }
+    billError.value = ''
   } catch (e) {
     invoiceError.value = e.message || 'Unable to create invoice.'
   } finally {

@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\OpdController;
 use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\PatientWorkspaceController;
 use App\Http\Controllers\Api\PharmacyMedicineController;
+use App\Http\Controllers\Api\PharmacyPosController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('login', [AuthController::class, 'login']);
@@ -64,4 +65,7 @@ Route::middleware('api.auth')->group(function () {
     Route::get('pharmacy/medicines', [PharmacyMedicineController::class, 'index']);
     Route::post('pharmacy/medicines', [PharmacyMedicineController::class, 'store']);
     Route::get('pharmacy/medicines/{id}', [PharmacyMedicineController::class, 'show']);
+    Route::get('pharmacy/pos/stock', [PharmacyPosController::class, 'stock']);
+    Route::post('pharmacy/pos/dispense', [PharmacyPosController::class, 'dispense']);
+    Route::get('pharmacy/pos/movements', [PharmacyPosController::class, 'movements']);
 });

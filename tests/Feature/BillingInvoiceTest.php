@@ -123,6 +123,115 @@ class BillingInvoiceTest extends TestCase
             ->assertJsonCount(1, 'data.items');
     }
 
+    public function test_other_hospital_invoice_not_listed_or_payable(): void
+    {
+        $hospitalA = UuidBin::generate();
+        $hospitalB = UuidBin::generate();
+
+        DB::table('hospitals')->insert([
+            [
+                'id' => $hospitalA,
+                'name' => 'Hospital A',
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => $hospitalB,
+                'name' => 'Hospital B',
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        $patientA = UuidBin::generate();
+        $patientB = UuidBin::generate();
+        DB::table('patients')->insert([
+            [
+                'id' => $patientA,
+                'hospital_id' => $hospitalA,
+                'mrn' => 'HCS-BA-1',
+                'first_name' => 'Alpha',
+                'last_name' => 'Patient',
+                'gender' => 'F',
+                'date_of_birth' => '1990-01-01',
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => $patientB,
+                'hospital_id' => $hospitalB,
+                'mrn' => 'HCS-BB-1',
+                'first_name' => 'Beta',
+                'last_name' => 'Patient',
+                'gender' => 'M',
+                'date_of_birth' => '1991-01-01',
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        $invoiceA = UuidBin::generate();
+        $invoiceB = UuidBin::generate();
+        DB::table('invoices')->insert([
+            [
+                'id' => $invoiceA,
+                'hospital_id' => $hospitalA,
+                'patient_id' => $patientA,
+                'invoice_number' => 'INV-A-1',
+                'invoice_type' => 'OPD',
+                'subtotal' => 100,
+                'discount' => 0,
+                'tax' => 0,
+                'total' => 100,
+                'amount_paid' => 0,
+                'balance' => 100,
+                'status' => 'issued',
+                'issued_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => $invoiceB,
+                'hospital_id' => $hospitalB,
+                'patient_id' => $patientB,
+                'invoice_number' => 'INV-B-1',
+                'invoice_type' => 'OPD',
+                'subtotal' => 200,
+                'discount' => 0,
+                'tax' => 0,
+                'total' => 200,
+                'amount_paid' => 0,
+                'balance' => 200,
+                'status' => 'issued',
+                'issued_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        $list = $this->withSession(['auth_user_id' => 'test-user'])
+            ->getJson('/api/billing/invoices');
+
+        $list->assertOk();
+        $ids = collect($list->json('data'))->pluck('id')->all();
+        $this->assertContains(UuidBin::from($invoiceA), $ids);
+        $this->assertNotContains(UuidBin::from($invoiceB), $ids);
+
+        $this->withSession(['auth_user_id' => 'test-user'])
+            ->getJson('/api/billing/invoices/'.UuidBin::from($invoiceB))
+            ->assertStatus(404);
+
+        $this->withSession(['auth_user_id' => 'test-user'])
+            ->postJson('/api/billing/invoices/'.UuidBin::from($invoiceB).'/payments', [
+                'amount' => 10,
+                'payment_method' => 'cash',
+            ])
+            ->assertStatus(404);
+    }
     private function seedIssuedInvoice(float $total, float $paid): array
     {
         $hospitalId = UuidBin::generate();

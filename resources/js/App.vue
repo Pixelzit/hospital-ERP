@@ -85,7 +85,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, h, defineComponent } from 'vue'
 import { api } from './api'
 import NavIcon from './components/NavIcon.vue'
 import Login from './components/Login.vue'
@@ -99,6 +99,22 @@ import OpdDashboard from './components/OpdDashboard.vue'
 import IPDManagement from './components/IPDManagement.vue'
 import Settings from './components/Settings.vue'
 import HelpFaq from './components/HelpFaq.vue'
+import ModulePlaceholder from './components/ModulePlaceholder.vue'
+import Emergency from './components/Emergency.vue'
+import Laboratory from './components/Laboratory.vue'
+import Radiology from './components/Radiology.vue'
+import Inventory from './components/Inventory.vue'
+import Reports from './components/Reports.vue'
+import Billing from './components/Billing.vue'
+
+function placeholderPage(title, message) {
+  return defineComponent({
+    name: 'Placeholder_' + title.replace(/[^a-zA-Z0-9]/g, ''),
+    setup() {
+      return () => h(ModulePlaceholder, { title, message })
+    },
+  })
+}
 
 const loggedIn = ref(false)
 const currentUser = ref(null)
@@ -137,26 +153,64 @@ onMounted(restoreSession)
 
 const menu = [
   { key: 'overview', label: 'Overview', icon: 'overview' },
-  { key: 'income', label: 'Income', icon: 'income' },
-  { key: 'doctors', label: 'Doctors', icon: 'doctors' },
+  { key: 'patient', label: 'Patients', icon: 'patient' },
   { key: 'appointments', label: 'Appointments', icon: 'appointments' },
-  { key: 'patient', label: 'Patient', icon: 'patient' },
   { key: 'opd', label: 'OPD', icon: 'patient' },
+  { key: 'emergency', label: 'Emergency', icon: 'patient' },
   { key: 'ipd', label: 'IPD', icon: 'patient' },
+  { key: 'nursing', label: 'Nursing', icon: 'patient' },
+  { key: 'ot', label: 'OT / Surgery', icon: 'patient' },
+  { key: 'procedure', label: 'Procedure Room', icon: 'patient' },
+  { key: 'laboratory', label: 'Laboratory', icon: 'patient' },
+  { key: 'radiology', label: 'Radiology', icon: 'patient' },
   { key: 'pharmacy', label: 'Pharmacy', icon: 'pharmacy' },
+  { key: 'inventory', label: 'Inventory', icon: 'pharmacy' },
+  { key: 'blood-bank', label: 'Blood Bank', icon: 'patient' },
+  { key: 'ambulance', label: 'Ambulance', icon: 'patient' },
+  { key: 'linen', label: 'Linen', icon: 'settings' },
+  { key: 'cssd', label: 'CSSD', icon: 'settings' },
+  { key: 'income', label: 'Income', icon: 'income' },
+  { key: 'insurance', label: 'Insurance / TPA', icon: 'income' },
+  { key: 'discharge', label: 'Discharge', icon: 'patient' },
+  { key: 'doctors', label: 'Doctors', icon: 'doctors' },
+  { key: 'departments', label: 'Departments', icon: 'doctors' },
+  { key: 'reports', label: 'Reports', icon: 'overview' },
+  { key: 'mis', label: 'MIS', icon: 'overview' },
+  { key: 'security', label: 'Security', icon: 'settings' },
+  { key: 'templates', label: 'Templates', icon: 'settings' },
+  { key: 'system', label: 'System', icon: 'settings' },
   { key: 'settings', label: 'Settings', icon: 'settings' },
   { key: 'help', label: 'Help & FAQ', icon: 'help' },
 ]
 
 const pages = {
   overview: Dashboard,
-  income: Income,
-  doctors: Doctors,
-  appointments: Appointments,
   patient: Patient,
+  appointments: Appointments,
   opd: OpdDashboard,
+  emergency: Emergency,
   ipd: IPDManagement,
+  nursing: placeholderPage('Nursing', 'Nursing station, vitals, and care plans module coming soon.'),
+  ot: placeholderPage('OT / Surgery', 'OT scheduling and perioperative module coming soon.'),
+  procedure: placeholderPage('Procedure Room', 'Procedure room booking and notes module coming soon.'),
+  laboratory: Laboratory,
+  radiology: Radiology,
   pharmacy: Pharmacy,
+  inventory: Inventory,
+  'blood-bank': placeholderPage('Blood Bank', 'Blood bank inventory and cross-match module coming soon.'),
+  ambulance: placeholderPage('Ambulance', 'Ambulance dispatch and tracking module coming soon.'),
+  linen: placeholderPage('Linen', 'Linen management module coming soon.'),
+  cssd: placeholderPage('CSSD', 'Central sterile supply module coming soon.'),
+  income: Income,
+  insurance: Billing,
+  discharge: placeholderPage('Discharge', 'Discharge summary and clearance module coming soon.'),
+  doctors: Doctors,
+  departments: placeholderPage('Departments', 'Department master and roster module coming soon.'),
+  reports: Reports,
+  mis: placeholderPage('MIS', 'Management information dashboards coming soon.'),
+  security: placeholderPage('Security', 'Access control and audit module coming soon.'),
+  templates: placeholderPage('Templates', 'Clinical and admin templates module coming soon.'),
+  system: placeholderPage('System', 'System configuration module coming soon.'),
   settings: Settings,
   help: HelpFaq,
 }

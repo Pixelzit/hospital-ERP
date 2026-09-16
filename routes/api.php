@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AppointmentController;
+use App\Http\Controllers\Api\IpdAdmissionController;
 use App\Http\Controllers\Api\BillingInvoiceController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
@@ -42,6 +43,11 @@ Route::middleware('api.auth')->group(function () {
     Route::get('doctors/{id}', [DoctorController::class, 'show']);
     Route::put('doctors/{id}', [DoctorController::class, 'update']);
     Route::delete('doctors/{id}', [DoctorController::class, 'destroy']);
+    Route::get('ipd/wards', [IpdAdmissionController::class, 'wards']);
+    Route::get('ipd/beds', [IpdAdmissionController::class, 'beds']);
+    Route::get('ipd/admissions', [IpdAdmissionController::class, 'index']);
+    Route::get('ipd/admissions/{id}', [IpdAdmissionController::class, 'show']);
+    Route::post('ipd/admissions', [IpdAdmissionController::class, 'store']);
     Route::get('billing/invoices', [BillingInvoiceController::class, 'index']);
     Route::get('billing/invoices/{id}', [BillingInvoiceController::class, 'show']);
     Route::post('billing/invoices/{id}/payments', [BillingInvoiceController::class, 'storePayment']);

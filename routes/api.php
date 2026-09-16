@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DoctorController;
+use App\Http\Controllers\Api\OpdController;
 use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\PatientWorkspaceController;
 use App\Http\Controllers\Api\PharmacyMedicineController;
@@ -15,6 +16,9 @@ Route::get('me', [AuthController::class, 'me']);
 
 Route::middleware('api.auth')->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index']);
+    Route::get('opd/visits', [OpdController::class, 'visits']);
+    Route::post('opd/visits', [OpdController::class, 'store']);
+    Route::patch('opd/visits/{id}/status', [OpdController::class, 'updateStatus']);
     Route::get('patients', [PatientController::class, 'index']);
     Route::post('patients/duplicates', [PatientController::class, 'duplicates']);
     Route::post('patients', [PatientController::class, 'store']);

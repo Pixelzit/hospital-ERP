@@ -24,6 +24,16 @@ class PharmacyMedicineTest extends TestCase
         $this->getJson('/api/pharmacy/medicines')->assertStatus(401);
     }
 
+    public function test_create_medicine_requires_auth(): void
+    {
+        $this->postJson('/api/pharmacy/medicines', [
+            'generic_name' => 'ShouldNotPersist',
+        ])->assertStatus(401);
+
+        $this->assertDatabaseCount('medicines', 0);
+    }
+
+
     public function test_list_medicines_returns_seeded_rows(): void
     {
         $hospitalId = UuidBin::generate();
@@ -95,6 +105,113 @@ class PharmacyMedicineTest extends TestCase
         );
     }
 
+
+    public function test_list_medicines_is_scoped_to_configured_hospital(): void
+    {
+        $hospitalA = UuidBin::generate();
+        $hospitalB = UuidBin::generate();
+
+        DB::table('hospitals')->insert([
+            [
+                'id' => $hospitalA,
+                'name' => 'Hospital A',
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => $hospitalB,
+                'name' => 'Hospital B',
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        DB::table('medicines')->insert([
+            [
+                'id' => UuidBin::generate(),
+                'hospital_id' => $hospitalA,
+                'generic_name' => 'VisibleToA',
+                'brand_name' => 'BrandA',
+                'strength' => '1 mg',
+                'dosage_form' => 'tablet',
+                'route' => 'oral',
+                'manufacturer' => 'Synthetic',
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => UuidBin::generate(),
+                'hospital_id' => $hospitalB,
+                'generic_name' => 'HiddenFromB',
+                'brand_name' => 'BrandB',
+                'strength' => '2 mg',
+                'dosage_form' => 'tablet',
+                'route' => 'oral',
+                'manufacturer' => 'Synthetic',
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        $response = $this->withSession(['auth_user_id' => 'test-user'])
+            ->getJson('/api/pharmacy/medicines');
+
+        $response->assertOk()->assertJsonPath('success', true);
+
+        $names = collect($response->json('data'))->pluck('generic_name')->all();
+        $this->assertContains('VisibleToA', $names);
+        $this->assertNotContains('HiddenFromB', $names);
+        $this->assertSame(1, $response->json('total'));
+    }
+
+    public function test_show_medicine_from_other_hospital_is_not_found(): void
+    {
+        $hospitalA = UuidBin::generate();
+        $hospitalB = UuidBin::generate();
+
+        DB::table('hospitals')->insert([
+            [
+                'id' => $hospitalA,
+                'name' => 'Hospital A',
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => $hospitalB,
+                'name' => 'Hospital B',
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        $otherId = UuidBin::generate();
+        DB::table('medicines')->insert([
+            'id' => $otherId,
+            'hospital_id' => $hospitalB,
+            'generic_name' => 'OtherHospitalDrug',
+            'brand_name' => 'OtherBrand',
+            'strength' => '5 mg',
+            'dosage_form' => 'tablet',
+            'route' => 'oral',
+            'manufacturer' => 'Synthetic',
+            'status' => 'active',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $uuid = UuidBin::from($otherId);
+
+        $this->withSession(['auth_user_id' => 'test-user'])
+            ->getJson('/api/pharmacy/medicines/'.$uuid)
+            ->assertNotFound()
+            ->assertJsonPath('success', false);
+    }
     private function createPharmacySchema(): void
     {
         Schema::create('hospitals', function (Blueprint $table) {

@@ -95,6 +95,7 @@ import Doctors from './components/Doctors.vue'
 import Appointments from './components/Appointments.vue'
 import Patient from './components/Patient.vue'
 import Pharmacy from './components/Pharmacy.vue'
+import OpdDashboard from './components/OpdDashboard.vue'
 import Settings from './components/Settings.vue'
 import HelpFaq from './components/HelpFaq.vue'
 
@@ -139,6 +140,7 @@ const menu = [
   { key: 'doctors', label: 'Doctors', icon: 'doctors' },
   { key: 'appointments', label: 'Appointments', icon: 'appointments' },
   { key: 'patient', label: 'Patient', icon: 'patient' },
+  { key: 'opd', label: 'OPD', icon: 'patient' },
   { key: 'pharmacy', label: 'Pharmacy', icon: 'pharmacy' },
   { key: 'settings', label: 'Settings', icon: 'settings' },
   { key: 'help', label: 'Help & FAQ', icon: 'help' },
@@ -150,6 +152,7 @@ const pages = {
   doctors: Doctors,
   appointments: Appointments,
   patient: Patient,
+  opd: OpdDashboard,
   pharmacy: Pharmacy,
   settings: Settings,
   help: HelpFaq,

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\IpdAdmissionController;
 use App\Http\Controllers\Api\IpdBillingController;
+use App\Http\Controllers\Api\NursingController;
 use App\Http\Controllers\Api\BillingInvoiceController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
@@ -52,6 +53,11 @@ Route::middleware('api.auth')->group(function () {
     Route::get('ipd/admissions/{id}/invoices', [IpdBillingController::class, 'index']);
     Route::post('ipd/admissions/{id}/invoices', [IpdBillingController::class, 'store']);
     Route::post('ipd/invoices/{id}/advance', [IpdBillingController::class, 'advance']);
+    Route::get('nursing/admissions', [NursingController::class, 'admissions']);
+    Route::get('nursing/admissions/{id}/vitals', [NursingController::class, 'vitalsIndex']);
+    Route::post('nursing/admissions/{id}/vitals', [NursingController::class, 'vitalsStore']);
+    Route::get('nursing/admissions/{id}/notes', [NursingController::class, 'notesIndex']);
+    Route::post('nursing/admissions/{id}/notes', [NursingController::class, 'notesStore']);
     Route::get('billing/invoices', [BillingInvoiceController::class, 'index']);
     Route::get('billing/invoices/{id}', [BillingInvoiceController::class, 'show']);
     Route::post('billing/invoices/{id}/payments', [BillingInvoiceController::class, 'storePayment']);

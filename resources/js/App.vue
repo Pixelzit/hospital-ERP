@@ -97,6 +97,7 @@ import Patient from './components/Patient.vue'
 import Pharmacy from './components/Pharmacy.vue'
 import OpdDashboard from './components/OpdDashboard.vue'
 import IPDManagement from './components/IPDManagement.vue'
+import NursingStation from './components/NursingStation.vue'
 import Settings from './components/Settings.vue'
 import HelpFaq from './components/HelpFaq.vue'
 import ModulePlaceholder from './components/ModulePlaceholder.vue'
@@ -190,7 +191,7 @@ const pages = {
   opd: OpdDashboard,
   emergency: Emergency,
   ipd: IPDManagement,
-  nursing: placeholderPage('Nursing', 'Nursing station, vitals, and care plans module coming soon.'),
+  nursing: NursingStation,
   ot: placeholderPage('OT / Surgery', 'OT scheduling and perioperative module coming soon.'),
   procedure: placeholderPage('Procedure Room', 'Procedure room booking and notes module coming soon.'),
   laboratory: Laboratory,

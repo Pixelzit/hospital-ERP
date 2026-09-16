@@ -98,6 +98,100 @@ class OpdVisitTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_other_hospital_visit_not_listed_or_patchable(): void
+    {
+        $hospitalA = UuidBin::generate();
+        $hospitalB = UuidBin::generate();
+
+        DB::table('hospitals')->insert([
+            [
+                'id' => $hospitalA,
+                'name' => 'Hospital A',
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => $hospitalB,
+                'name' => 'Hospital B',
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        $patientA = UuidBin::generate();
+        $patientB = UuidBin::generate();
+        DB::table('patients')->insert([
+            [
+                'id' => $patientA,
+                'hospital_id' => $hospitalA,
+                'mrn' => 'HCS-A-1',
+                'first_name' => 'Alpha',
+                'last_name' => 'Patient',
+                'gender' => 'F',
+                'date_of_birth' => '1990-01-01',
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => $patientB,
+                'hospital_id' => $hospitalB,
+                'mrn' => 'HCS-B-1',
+                'first_name' => 'Beta',
+                'last_name' => 'Patient',
+                'gender' => 'M',
+                'date_of_birth' => '1991-01-01',
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        $visitA = UuidBin::generate();
+        $visitB = UuidBin::generate();
+        DB::table('encounters')->insert([
+            [
+                'id' => $visitA,
+                'hospital_id' => $hospitalA,
+                'patient_id' => $patientA,
+                'encounter_number' => 'OPD-A-0001',
+                'encounter_type' => 'OPD',
+                'status' => 'open',
+                'started_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => $visitB,
+                'hospital_id' => $hospitalB,
+                'patient_id' => $patientB,
+                'encounter_number' => 'OPD-B-0001',
+                'encounter_type' => 'OPD',
+                'status' => 'open',
+                'started_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        $list = $this->withSession(['auth_user_id' => 'test-user'])
+            ->getJson('/api/opd/visits?date='.now()->toDateString());
+
+        $list->assertOk();
+        $ids = collect($list->json('data'))->pluck('id')->all();
+        $this->assertContains(UuidBin::from($visitA), $ids);
+        $this->assertNotContains(UuidBin::from($visitB), $ids);
+
+        $this->withSession(['auth_user_id' => 'test-user'])
+            ->patchJson('/api/opd/visits/'.UuidBin::from($visitB).'/status', ['status' => 'nurse_seen'])
+            ->assertStatus(404);
+
+        $this->withSession(['auth_user_id' => 'test-user'])
+            ->postJson('/api/opd/visits', ['patient_id' => UuidBin::from($patientB)])
+            ->assertStatus(404);
+    }
     private function seedHospitalAndPatient(): array
     {
         $hospitalId = UuidBin::generate();

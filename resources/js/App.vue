@@ -95,6 +95,7 @@ import Doctors from './components/Doctors.vue'
 import Appointments from './components/Appointments.vue'
 import Patient from './components/Patient.vue'
 import Pharmacy from './components/Pharmacy.vue'
+import PharmacyPos from './components/PharmacyPos.vue'
 import OpdDashboard from './components/OpdDashboard.vue'
 import IPDManagement from './components/IPDManagement.vue'
 import NursingStation from './components/NursingStation.vue'
@@ -165,6 +166,7 @@ const menu = [
   { key: 'laboratory', label: 'Laboratory', icon: 'patient' },
   { key: 'radiology', label: 'Radiology', icon: 'patient' },
   { key: 'pharmacy', label: 'Pharmacy', icon: 'pharmacy' },
+  { key: 'pharmacy-pos', label: 'Pharmacy POS', icon: 'pharmacy' },
   { key: 'inventory', label: 'Inventory', icon: 'pharmacy' },
   { key: 'blood-bank', label: 'Blood Bank', icon: 'patient' },
   { key: 'ambulance', label: 'Ambulance', icon: 'patient' },
@@ -197,6 +199,7 @@ const pages = {
   laboratory: Laboratory,
   radiology: Radiology,
   pharmacy: Pharmacy,
+  'pharmacy-pos': PharmacyPos,
   inventory: Inventory,
   'blood-bank': placeholderPage('Blood Bank', 'Blood bank inventory and cross-match module coming soon.'),
   ambulance: placeholderPage('Ambulance', 'Ambulance dispatch and tracking module coming soon.'),

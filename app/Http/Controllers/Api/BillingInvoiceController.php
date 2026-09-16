@@ -159,6 +159,16 @@ class BillingInvoiceController extends Controller
                     ], 422);
                 }
 
+                // IPD invoices can only be paid when status is final (v1).
+                if (strtoupper((string) $invoice->invoice_type) === 'IPD'
+                    && strtolower((string) $invoice->status) !== 'final') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'IPD invoice must be final before payment.',
+                        'errors' => ['status' => ['Advance invoice to final before collecting payment.']],
+                    ], 422);
+                }
+
                 $amount = round((float) $validated['amount'], 2);
                 $balance = round((float) $invoice->balance, 2);
 

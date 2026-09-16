@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AppointmentController;
+use App\Http\Controllers\Api\BillingInvoiceController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DoctorController;
@@ -41,6 +42,9 @@ Route::middleware('api.auth')->group(function () {
     Route::get('doctors/{id}', [DoctorController::class, 'show']);
     Route::put('doctors/{id}', [DoctorController::class, 'update']);
     Route::delete('doctors/{id}', [DoctorController::class, 'destroy']);
+    Route::get('billing/invoices', [BillingInvoiceController::class, 'index']);
+    Route::get('billing/invoices/{id}', [BillingInvoiceController::class, 'show']);
+    Route::post('billing/invoices/{id}/payments', [BillingInvoiceController::class, 'storePayment']);
     Route::get('pharmacy/medicines', [PharmacyMedicineController::class, 'index']);
     Route::post('pharmacy/medicines', [PharmacyMedicineController::class, 'store']);
     Route::get('pharmacy/medicines/{id}', [PharmacyMedicineController::class, 'show']);
